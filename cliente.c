@@ -1,5 +1,5 @@
 /**
- *@file: servidor.c
+ *@file: cliente.c
  *@Trimestre: Abril-Julio 2015
  *@Curso: Redes I CI-4815
  *@seccion: 1
@@ -9,8 +9,7 @@
  */
 
  #include "estructura.h"
- #include "f_servidor.c"
-
+ #include "f_cliente.c"
 /*
  * Programa Principal
  * @param argc:   Cantidad de argumentos de entrada.
@@ -23,16 +22,17 @@
  	int col;
  	int puerto;
  	int i;
- 	int socketServidor;
+ 	int socketCliente;
+ 	//i = 4;
 
- 	if (argc<5 || argc>8){
+ 	if (argc<8){
  		perror("Error: Numero de argumentos invalidos.\n"
- 			"	Introduzca: reserva_bol_ser -f <filas> -c <col> [-p puerto]");
+ 			"	Introduzca: reserva_bol_cli <ip-servidor> -p <puerto servicio> -f <fila> -c <col>");
  		exit(1);
  	}
- 	//printf("HOLAA: %s",argv[0]);
+
  	/* Verificamos los argumentos */
- 	for (i=2; i<argc;i++){
+ 	for (i=3; i<argc;i++){
  		if (strcmp("-f",argv[i])==0){
  			i++;
  			/* Verificamos que sea un numero entero */
@@ -60,6 +60,7 @@
  			exit(1);
  		}
  	}
- 	socketServidor = crear_conexion(puerto);
+
+ 	socketCliente = conectar_servidor(argv[2],puerto);
  	return 0;
  }
