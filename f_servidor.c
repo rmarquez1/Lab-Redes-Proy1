@@ -8,6 +8,8 @@
  *Proyecto 1: Programación con sockets/Protocolos de comunicacion
  */
 
+#include "estructura.h"
+
 void die(char *message) {
   perror(message);
   exit(1);
@@ -31,6 +33,88 @@ void copyData(int from, int to) {
 
 }
 
+pthread_t hilos_clientes[TAMANO];
+pthread_t hilo_cliente;
+pthread_mutex_t mutex_clientes[TAMANO];
+pthread_mutex_t mutex_cliente;
+
+/**
+ * atender:
+ *  Se encarga de atender a un cliente/usuario . Almacena los datos
+ * enviados y procede a ejecutar los comandos dependiendo del caso
+ *
+ * @param sala: corresponde al identificador de la sala(chat) a enviar mensaje
+ * @param socket: corresponde al identificador de la conexion
+ */
+void* atender( void* sock){
+
+    int  tipo_comando;
+    int  tam;                              //tamano de la estructra desconocida
+    int socket;
+    char usuario[TAMANO];// para nombre del usuario
+    char comando[TAMANO];
+    char mensaje[TAMANO];
+    socket = *(int *)sock;
+    /*
+        printf("...getting data\n");
+                copyData(socket,1);
+                printf("...Done\n");
+                close(socket);
+   */
+    while (TRUE){
+        if(tam = recv (socket,&comando,TAMANO,0)== -1){
+            printf("Error : No se pudo leer usuario en el socket servidor - cliente ");
+             exit(1);
+         }else{
+            printf("%s\n",comando );
+         }
+    }
+}
+
+
+/**
+ * trabajar_ servidor:
+ * Corresponde a la sala/servidor creada al iniciar la ejecucion de schat. A esta sala le 
+ * corresponde atender a todos los clientes que se conectan por primera vez y ademas
+ * mantener un registro de estos que luego podran cambiar de sala.
+ *
+ * @param socket: corresponde al identificador de la conexion
+ */
+void*  trabajar_servidor(void* sock ){
+
+    struct sockaddr_in address;
+    struct sockaddr_in remote_address;
+    int new_sock;
+    int acceptados;
+    int addrLength = sizeof(struct sockaddr );
+    // Sala* sala = (Sala*)sal;     //CONVERSION A SALA
+    int socket = *(int *) sock;   
+    int i;
+    int clientes;
+    clientes = 0;
+    //Para cada cliente que quiera conectarse, lo atiendo
+    while(TRUE){
+        new_sock = accept(socket,(struct sockaddr *) &address, &addrLength);
+        if (new_sock < 0) {
+            perror("ERROR en accept");
+            exit(1);
+        }
+        
+        if((pthread_create(&hilos_clientes[clientes],NULL,atender,(void*)&new_sock))!=0){ 
+            perror("ERROR: creacion hilo cliente"); 
+            exit(1);
+        }
+        clientes++;
+        //atender(0,new_sock);  //Atender en sala por default
+        
+    }// cierre del while
+    
+    while (i<clientes){
+        pthread_join(hilos_clientes[i],NULL);
+    }
+}
+
+
 /**
  * crear_conexion:
  *  Se encarga de crear una conexion TCP/IP,  especificando el puerto
@@ -44,10 +128,8 @@ int crear_conexion(int puerto){
 
     struct sockaddr_in address;
     struct sockaddr_in remote_address;
-    int sock,conn;
-    size_t addrLength = sizeof(struct sockaddr_in);
-
-    /**
+    int sock;
+ /**
      * Abrimos el socket
      * AF_INET    :Protocolos de Internet IPv4
      * SOCK_STREAM:Tipo orientado a conexion 
@@ -69,11 +151,35 @@ int crear_conexion(int puerto){
         perror("Error: listen");
         exit(1);
      }
-      while((conn = accept(sock, (struct sockaddr *) &address, &addrLength)) >= 0) {
-        printf("...getting data\n");
-                copyData(conn,1);
-                printf("...Done\n");
-                close(conn);
-     }
-	return sock;
+    return sock;
 }
+
+/**
+ * conectar_cliente:
+ *  Se encarga de crear una conexion TCP/IP,  especificando el puerto
+ *  por donde se realiza la comunicacion con el servidor devolviendo el
+ * socket descriptor de la conexion
+ * Se crea ademas un hilo que atiende a la sala por default
+ *
+ * @param puerto:  puerto por donde se realiza la comunicacion
+ * @return sock: sock resultado de la conexion, para comunicarse
+ */
+int conectar_cliente(int puerto){
+
+   int sock;
+
+   
+   pthread_mutex_init(&mutex_cliente,NULL);
+
+   sock = crear_conexion(puerto);
+
+   if((pthread_create(&hilo_cliente,NULL,trabajar_servidor,(void*)&sock))!=0){ 
+        perror("ERROR: creacion hilo clientes"); 
+         exit(1);
+    }
+    pthread_join(hilo_cliente,NULL);
+ 
+   
+   return sock; /*retorno para cerrar*/
+}
+

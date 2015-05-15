@@ -60,6 +60,6 @@
  			exit(1);
  		}
  	}
- 	socketServidor = crear_conexion(puerto);
+ 	socketServidor = conectar_cliente(puerto);
  	return 0;
  }

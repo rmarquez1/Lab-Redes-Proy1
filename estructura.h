@@ -40,13 +40,9 @@
 #include "estructura.h"
 
 
-/**
-* Estructura de Clientes:
-* @nombre: nombre del cliente en el  chat.
-* @id_hilo: id del hilo que representa el cliente. 
-* @socket: id del socket con el que la sala se comunica con el cliente
-* @prox: apuntador al proximo en la lista de clientes asociados a la sala.
-*/ 
+
+
+
 struct asiento{
 	int fila, col, ocupado;   
 };
