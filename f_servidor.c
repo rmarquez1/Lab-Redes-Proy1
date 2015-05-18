@@ -8,178 +8,166 @@
  *Proyecto 1: Programación con sockets/Protocolos de comunicacion
  */
 
-#include "estructura.h"
+#ifndef FUNCIONESS_C
+#define FUNCIONESS_C
 
-void die(char *message) {
-  perror(message);
-  exit(1);
-}
+#include "f_servidor.h"
 
-void copyData(int from, int to) {
-  char buf[1024];
-  int amount;
+//Variable que representa el estado del tren
+Train globlalTrain;
 
- 
-  while ((amount = read(from, buf, sizeof(buf))) > 0){
-    if (write(to, buf, amount) != amount) {
-      die("write");
-      return;
-    }
-  }
-  
-  if (amount < 0) die("read");
-
-
-
-}
-
-pthread_t hilos_clientes[TAMANO];
-pthread_t hilo_cliente;
-pthread_mutex_t mutex_clientes[TAMANO];
-pthread_mutex_t mutex_cliente;
-
-/**
- * atender:
- *  Se encarga de atender a un cliente/usuario . Almacena los datos
- * enviados y procede a ejecutar los comandos dependiendo del caso
- *
- * @param sala: corresponde al identificador de la sala(chat) a enviar mensaje
- * @param socket: corresponde al identificador de la conexion
- */
-void* atender( void* sock){
-
-    int  tipo_comando;
-    int  tam;                              //tamano de la estructra desconocida
-    int socket;
-    char usuario[TAMANO];// para nombre del usuario
-    char comando[TAMANO];
-    char mensaje[TAMANO];
-    socket = *(int *)sock;
-    /*
-        printf("...getting data\n");
-                copyData(socket,1);
-                printf("...Done\n");
-                close(socket);
-   */
-    while (TRUE){
-        if(tam = recv (socket,&comando,TAMANO,0)== -1){
-            printf("Error : No se pudo leer usuario en el socket servidor - cliente ");
-             exit(1);
-         }else{
-            printf("%s\n",comando );
-         }
-    }
-}
+//Semaforo para asegurarnos que dos hilos que atienden clientes no se interpongan mientras acceden a la variable globlalTrain
+pthread_mutex_t lockTrain = PTHREAD_MUTEX_INITIALIZER;
 
 
 /**
- * trabajar_ servidor:
- * Corresponde a la sala/servidor creada al iniciar la ejecucion de schat. A esta sala le 
- * corresponde atender a todos los clientes que se conectan por primera vez y ademas
- * mantener un registro de estos que luego podran cambiar de sala.
- *
- * @param socket: corresponde al identificador de la conexion
+ * initializeTrain:
+ * Se encarga de inicializar el tren con todos los asientos vacios
  */
-void*  trabajar_servidor(void* sock ){
+void initializeTrain()
+{
+	int i = 0;
+	int j = 0;
 
-    struct sockaddr_in address;
-    struct sockaddr_in remote_address;
-    int new_sock;
-    int acceptados;
-    int addrLength = sizeof(struct sockaddr );
-    // Sala* sala = (Sala*)sal;     //CONVERSION A SALA
-    int socket = *(int *) sock;   
-    int i;
-    int clientes;
-    clientes = 0;
-    //Para cada cliente que quiera conectarse, lo atiendo
-    while(TRUE){
-        new_sock = accept(socket,(struct sockaddr *) &address, &addrLength);
-        if (new_sock < 0) {
-            perror("ERROR en accept");
-            exit(1);
-        }
-        
-        if((pthread_create(&hilos_clientes[clientes],NULL,atender,(void*)&new_sock))!=0){ 
-            perror("ERROR: creacion hilo cliente"); 
-            exit(1);
-        }
-        clientes++;
-        //atender(0,new_sock);  //Atender en sala por default
-        
-    }// cierre del while
-    
-    while (i<clientes){
-        pthread_join(hilos_clientes[i],NULL);
-    }
-}
-
-
-/**
- * crear_conexion:
- *  Se encarga de crear una conexion TCP/IP,  especificando el puerto
- *  por donde se realiza la comunicacion con los clientes devolviendo el
- * socket descriptor de la conexion
- *
- * @param puerto:  puerto por donde se realiza la comunicacion
- * @return sock: sock resultado de la conexion, para comunicarse
- */
-int crear_conexion(int puerto){
-
-    struct sockaddr_in address;
-    struct sockaddr_in remote_address;
-    int sock;
- /**
-     * Abrimos el socket
-     * AF_INET    :Protocolos de Internet IPv4
-     * SOCK_STREAM:Tipo orientado a conexion 
-     */
-     if((sock = socket(AF_INET, SOCK_STREAM, 0))==-1){
-        perror("Error: creacion socket servidor");
-        exit(1);
-     }
-
-     address.sin_family = AF_INET;                          /**Es el tipo de conexión*/
-     address.sin_port   = htons(puerto);                    /**Es el número correspondiente al servicio */
-     address.sin_addr.s_addr = htons(INADDR_ANY);           /**IP local*/
-    
-     if((bind(sock, (struct sockaddr *)&address,sizeof(struct sockaddr)))==-1){
-         perror("Error: bind\n");
-     }
-
-     if ((listen(sock, 100)) == -1){
-        perror("Error: listen");
-        exit(1);
-     }
-    return sock;
+	while(i < MAX_FILES)
+	{
+		j = 0;
+		while(j < MAX_COLUMNS)
+		{
+			globlalTrain.seats[i][j++] = 0;
+		}
+		i++;
+	}
+	globlalTrain.cantOccupied = 0;
 }
 
 /**
- * conectar_cliente:
- *  Se encarga de crear una conexion TCP/IP,  especificando el puerto
- *  por donde se realiza la comunicacion con el servidor devolviendo el
- * socket descriptor de la conexion
- * Se crea ademas un hilo que atiende a la sala por default
- *
- * @param puerto:  puerto por donde se realiza la comunicacion
- * @return sock: sock resultado de la conexion, para comunicarse
+ * trainToString:
+ * Se encargada de convertir el estado del tren en un string para ser enviado al cliente en caso de
+ * que este haya pedido un asiento ocupado y se deba retornar la lista de asientos ocupados
+ * @param buffer:  string en el que se escribira el estado del tren
  */
-int conectar_cliente(int puerto){
+void trainToString(char* buffer)
+{
+	int i = 0;
+	int j = 0;
+	char auxBuffer[2];
+	
+	pthread_mutex_lock(&lockTrain);
 
-   int sock;
+	while(i < MAX_FILES)
+	{
+		j = 0;
+		while(j < MAX_COLUMNS)
+		{
+			sprintf(auxBuffer, "%d", globlalTrain.seats[i][j++]);
+			strcat(buffer, auxBuffer);
+		}
+		i++;
+	}
 
-   
-   pthread_mutex_init(&mutex_cliente,NULL);
+	pthread_mutex_unlock(&lockTrain);
 
-   sock = crear_conexion(puerto);
-
-   if((pthread_create(&hilo_cliente,NULL,trabajar_servidor,(void*)&sock))!=0){ 
-        perror("ERROR: creacion hilo clientes"); 
-         exit(1);
-    }
-    pthread_join(hilo_cliente,NULL);
- 
-   
-   return sock; /*retorno para cerrar*/
 }
 
+/**
+ * verifySeat:
+ * Se encarga de verificar que el asiento representado por las variables file y column
+ * se encuentra disponible o ocupado. En caso que el asiento esta ocupado retorna 1, en
+ * en caso que este disponible retorna 0 y en caso que el vagon este lleno retorna 2.
+ * @param file:  fila del asiento
+ * @param column:  columna del asiento
+ * @return r: estado del asiento
+ */
+int verifySeat(int file, int column)
+{
+	int r;
+	pthread_mutex_lock(&lockTrain);
+	if(globlalTrain.cantOccupied == MAX_COLUMNS * MAX_FILES)
+		r = 2;
+	else
+		if(globlalTrain.seats[file][column] == 1)
+			r = 1;
+		else
+		{
+			globlalTrain.seats[file][column] = 1;
+			globlalTrain.cantOccupied++;
+			r = 0;
+		}
+	pthread_mutex_unlock(&lockTrain);
+	return r;
+}
+
+/**
+ * HandleTCPClient:
+ * Se encarga de manejar todo el proceso de comunicacion con el cliente
+ * @param sock:  socket por el que se realiza la comunicacion
+ */
+void* HandleTCPClient(void* sock)
+{
+	int clntSocket = *(int*) sock; 
+	char echoBuffer[RCVBUFSIZE];
+	int recvMsgSize;
+
+	if ((recvMsgSize = recv(clntSocket, echoBuffer, RCVBUFSIZE-1, 0)) < 0)
+		DieThreadWithError("recv() failed");
+
+	echoBuffer[recvMsgSize] = '\0';
+
+	printf("%s\n", echoBuffer);
+
+	if(strcmp(echoBuffer, STRING_EXIT) == 0)
+		DieThreadWithError("El cliente decidio cerrar la conexion");
+	
+	int f = getNumber(echoBuffer, 'F', 'C');
+	int c = getNumber(echoBuffer, 'C', '\0');
+	int r = verifySeat(f,c);
+
+	sprintf(echoBuffer, "%d", r);
+
+	if(r == 0) 		  strcat(echoBuffer, "\n");
+	else if(r == 1) { strcat(echoBuffer, "\n"); trainToString(echoBuffer);  strcat(echoBuffer, "\n"); }
+	else if(r == 2)   strcat(echoBuffer, "\n");
+	else DieThreadWithError("Ocurrio un error inesperado del lado del servidor");
+
+	unsigned int strBufferLen = strlen(echoBuffer);
+	
+	if (send(clntSocket, echoBuffer, strBufferLen, 0) != strBufferLen)
+			DieThreadWithError("send() failed");
+
+	if(r == 1)
+		HandleTCPClient(sock);
+
+	close(clntSocket);
+	pthread_exit(NULL);
+}
+
+/**
+ * getNumber:
+ * Funcion ancargada de separar un string a partir del caracter begin
+ * hasta el caracter end y convertir el resultado a un entero
+ * @param cMessage:  string que se desea separar
+ * @param begin:  caracter que representa el comienzo del entero
+ * @param end:  caracter que representa el fin del entero
+ * @return cnvtBuffer: entero que deseamos extraer
+ */
+int getNumber(char* cMessage, char begin, char end)
+{
+	char cnvtBuffer[RCVBUFSIZE];
+
+	while((*cMessage) != begin) cMessage++;
+
+	int i = 0;
+	cMessage++;
+
+	while((*cMessage) != end) 
+	{ 
+		cnvtBuffer[i++] = *cMessage; 
+		cMessage++; 
+	}
+	
+	cnvtBuffer[i] = '\0';
+
+	return(atoi(cnvtBuffer));
+}
+#endif
