@@ -72,8 +72,6 @@ void manageResponse(char* echoString, int sock)
 	int bytesRcvd; 
 	char echoBuffer[RCVBUFSIZE]; 
 
-	printf("%s\n", echoString);
-
 	if (send(sock, echoString, echoStringLen, 0) != echoStringLen)
 		DieWithError("Error en la funcion send, se envio un numero distinto de bytes del esperado");
 

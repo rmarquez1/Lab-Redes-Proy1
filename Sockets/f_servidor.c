@@ -13,12 +13,59 @@
 
 #include "f_servidor.h"
 
+FILE* fp;
+pthread_mutex_t lockFile  = PTHREAD_MUTEX_INITIALIZER;
+
 //Variable que representa el estado del tren
 Train globlalTrain;
 
 //Semaforo para asegurarnos que dos hilos que atienden clientes no se interpongan mientras acceden a la variable globlalTrain
 pthread_mutex_t lockTrain = PTHREAD_MUTEX_INITIALIZER;
 
+void writeLogSend(int clntSocket, char* echoBuffer)
+{
+	pthread_mutex_lock(&lockFile);
+	fp = fopen("bitacora.txt", "a");
+	fprintf(fp, "%s\tEl mensaje %s\tse envio al cliente conectado a traves del socket %d \n", getTime(), echoBuffer, clntSocket);
+	fclose(fp);
+	pthread_mutex_unlock(&lockFile);
+}
+
+void writeLogCloseClient(int clntSocket)
+{
+	pthread_mutex_lock(&lockFile);
+	fp = fopen("bitacora.txt", "a");
+	fprintf(fp, "%s\tSe cerro la conexion con el cliente conectado a traves del socket %d\n", getTime(), clntSocket);
+	fclose(fp);
+	pthread_mutex_unlock(&lockFile);
+}
+
+void writeRecvLog(char* echoBuffer, int clntSocket)
+{
+	pthread_mutex_lock(&lockFile);
+	fp = fopen("bitacora.txt", "a");
+	fprintf(fp, "%s\tEl cliente envio el mensaje %s a traves del socket %d \n", getTime(), echoBuffer, clntSocket);
+	fclose(fp);
+	pthread_mutex_unlock(&lockFile);
+}
+
+void writeFromClientLog (struct sockaddr_in echoClntAddr, int clntSock)
+{
+	pthread_mutex_lock(&lockFile);
+	fp = fopen("bitacora.txt", "a");
+	fprintf(fp, "%s\tConexion exitosa con el cliente %s a traves del socket %d\n", getTime(), getClientIP(echoClntAddr), clntSock);
+	fclose(fp);
+	pthread_mutex_unlock(&lockFile);
+}
+
+void writeLog(char* message)
+{
+	pthread_mutex_lock(&lockFile);
+	fp = fopen("bitacora.txt", "a");
+	fprintf(fp, "%s\t%s\n", getTime(), message);
+	fclose(fp);
+	pthread_mutex_unlock(&lockFile);
+}
 
 /**
  * initializeTrain:
@@ -110,14 +157,17 @@ void* HandleTCPClient(void* sock)
 	int recvMsgSize;
 
 	if ((recvMsgSize = recv(clntSocket, echoBuffer, RCVBUFSIZE-1, 0)) < 0)
-		DieThreadWithError("recv() failed");
+		DieThreadWithError("Error en la funcion recv en el servidor");
 
 	echoBuffer[recvMsgSize] = '\0';
 
-	printf("%s\n", echoBuffer);
+	writeRecvLog(echoBuffer, clntSocket);
 
 	if(strcmp(echoBuffer, STRING_EXIT) == 0)
+	{
+		writeLogCloseClient(clntSocket);
 		DieThreadWithError("El cliente decidio cerrar la conexion");
+	}
 	
 	int f = getNumber(echoBuffer, 'F', 'C');
 	int c = getNumber(echoBuffer, 'C', '\0');
@@ -133,12 +183,15 @@ void* HandleTCPClient(void* sock)
 	unsigned int strBufferLen = strlen(echoBuffer);
 	
 	if (send(clntSocket, echoBuffer, strBufferLen, 0) != strBufferLen)
-			DieThreadWithError("send() failed");
-
+		DieThreadWithError("Error en la funcion send en el servidor");
+	
+	writeLogSend(clntSocket, echoBuffer);
+	
 	if(r == 1)
 		HandleTCPClient(sock);
 
 	close(clntSocket);
+	writeLogCloseClient(clntSocket);
 	pthread_exit(NULL);
 }
 

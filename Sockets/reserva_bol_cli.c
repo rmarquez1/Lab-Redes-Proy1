@@ -42,36 +42,40 @@ int main(int argc, char *argv[])
  	}
 
  	/* Verificamos los argumentos */
- 	for (i=2; i<argc;i++){
- 		if (strcmp("-p",argv[i])==0){
- 			i++;
- 			/* Verificamos que sea un numero entero */
- 			if (!(echoServPort=atoi(argv[i])))
- 				DieWithError("ERROR: EL VALOR SEGUIDO DE [-p] DEBE SER UN NUMERO ENTERO\n");
+	if (strcmp("-p",argv[2])==0){
+		/* Verificamos que sea un numero entero */
+		if (!(echoServPort=atoi(argv[3])))
+			DieWithError("ERROR: EL VALOR SEGUIDO DE [-p] DEBE SER UN NUMERO ENTERO\n");
 
- 		} else if(strcmp("-f",argv[i])==0){
- 			i++;
- 			/* Verificamos que sea un numero entero */
- 			if (!(file=atoi(argv[i])))
- 			 	DieWithError("ERROR: EL VALOR SEGUIDO DE [-f] DEBE SER UN NUMERO ENTERO\n");
+	} else {
+		DieWithError("Error: Argumentos invalidos.\n"
+				"	Introduzca: reserva_bol_ser -f <filas> -c <col> [-p puerto]\n");
+	}
 
- 			if(verifyFile(file))
- 				DieWithError("ERROR: EL RANGO DE VALORES PARA LA FILA ES DE [0,10)\n");
+	if(strcmp("-f",argv[4])==0){
+		/* Verificamos que sea un numero entero */
+		if (!(file=atoi(argv[5])))
+		 	DieWithError("ERROR: EL VALOR SEGUIDO DE [-f] DEBE SER UN NUMERO ENTERO\n");
 
- 		} else if(strcmp("-c",argv[i])==0){
- 			i++;
-  			if (!(column=atoi(argv[i])))
- 				DieWithError("ERROR: EL VALOR SEGUIDO DE [-c] DEBE SER UN NUMERO ENTERO\n");
+		if(verifyFile(file))
+			DieWithError("ERROR: EL RANGO DE VALORES PARA LA FILA ES DE [0,10)\n");
+    } else {
+		DieWithError("Error: Argumentos invalidos.\n"
+				"	Introduzca: reserva_bol_ser -f <filas> -c <col> [-p puerto]\n");
+	}
+	
+	if(strcmp("-c",argv[6])==0){
+		if (!(column=atoi(argv[7])))
+			DieWithError("ERROR: EL VALOR SEGUIDO DE [-c] DEBE SER UN NUMERO ENTERO\n");
 
- 			/* Verificamos que sea un numero entero */
- 			if(verifyColumn(column))
- 				DieWithError("ERROR: EL RANGO DE VALORES PARA LA COLUMNA ES DE [0,4)\n");
+		/* Verificamos que sea un numero entero */
+		if(verifyColumn(column))
+			DieWithError("ERROR: EL RANGO DE VALORES PARA LA COLUMNA ES DE [0,4)\n");
 
- 		} else {
- 			DieWithError("Error: Argumentos invalidos.\n"
- 					"	Introduzca: reserva_bol_ser -f <filas> -c <col> [-p puerto]\n");
- 		}
- 	}
+	} else {
+		DieWithError("Error: Argumentos invalidos.\n"
+				"	Introduzca: reserva_bol_ser -f <filas> -c <col> [-p puerto]\n");
+	}
 
 	servIP = argv[1];
 	

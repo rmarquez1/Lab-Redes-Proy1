@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h> 
+#include <time.h>
 
 #define RCVBUFSIZE 64
 #define MAX_FILES 10	//Numero maximo de filas en un vagon
@@ -21,5 +22,8 @@
 
 void DieWithError(char *errorMessage);
 void DieThreadWithError(char *errorMessage);
+char* getTime ();
+char* getClientIP(struct sockaddr_in echoClntAddr);
+void DieWithError(char *errorMessage);
 
 #endif

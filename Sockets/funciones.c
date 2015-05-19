@@ -19,10 +19,24 @@ void DieWithError(char *errorMessage)
 	exit(1);
 }
 
-
 void DieThreadWithError(char *errorMessage)
 {
 	printf("%s\n", errorMessage);
 	pthread_exit(NULL);
+}
+
+char* getTime ()
+{
+  time_t rawtime;
+  struct tm * timeinfo;
+
+  time ( &rawtime );
+  timeinfo = localtime ( &rawtime );
+  return asctime (timeinfo);
+}
+
+char* getClientIP(struct sockaddr_in echoClntAddr)
+{
+	return inet_ntoa(echoClntAddr.sin_addr);
 }
 #endif

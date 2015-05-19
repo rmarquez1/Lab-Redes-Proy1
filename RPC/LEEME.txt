@@ -1,0 +1,74 @@
+/**********************************************************************
+								Integrantes
+***********************************************************************/
+José Luis Jiménez 10-10839
+Ramón Márquez	  10-10849
+
+/**********************************************************************
+								Archivos
+***********************************************************************/
+
+- estructura.x
+	Sigue la especificación de lenguaje RPC para que sirva como entrada
+	a la orden de comandos "rpcgen".
+
+- estructura.h
+	Se genera con las modificaciones que indica el archivo estructura.x
+	con el comando "rpcgen".
+
+- estructura_client.c
+	Contiene el código generado por "rpcgen" para la aplicación del 
+	cliente y que fue alterado por nosotros. Acá se realizan las 
+	llamadas a las funciones que están en el servidor.
+
+- estructura_clnt.c
+	Contiene el código del talón vinculado con el cliente, que "rpcgen"
+	generó y que no debe ser alterado.
+
+- estructura_server.c
+	Registra la plantilla con el código generado por "rpcgen" para la
+	aplicación del servidor y fue alterado para agregar las funciones
+	necesarias.
+
+- estructura_svc.c
+	Producido por "rpcgen" y almacena el código del talón del servidor.
+	A pesar de que es un archivo que no debe ser modificado, se le 
+	agregó las validaciones de los parámetros de entrada al momento de
+	ejecutar el servidor.
+
+- Makefile
+	Genera los ejecutables.
+
+/**********************************************************************
+						¿Qué hace el programa?
+***********************************************************************/
+
+	El programa se encarga de reservar asientos en los vagones del
+Sistema Ferroviario de Venezuela. El servidor se encarga de mantener
+el estado del vagón y los clientes (número indefinido de ellos) solicitan
+los asientos que quieren reservar. 
+
+	Si el asiento fue reservado con éxito, se imprime un mensaje del
+estado de la reserva. Lo mismo sucede si el vagón está lleno, se le
+informa al cliente tal situación. En caso de que el asiento que va a 
+reservar está ocupado, se le informa al cliente y además se le muestra
+el estado de los asientos. Si el asiento está ocupado, imprimirá 1 en el
+mismo y 0 en caso contrario.
+
+/**********************************************************************
+						¿Cómo se ejecuta?
+***********************************************************************/
+
+- Compilación:
+	Ejecutar "make".
+
+- Ejecución:
+	* En el servidor: ./reserva_bol_ser -f <fila> -c <col>
+
+	* En el cliente: ./reserva_bol_cli <ip-servidor> -f <fila> -c <col>
+
+	En el caso de Sockets se puede indicar el puerto donde se está 
+	comunicando el cliente y el servidor. En este caso, no hace falta.
+
+	Si al ejecutar no se puede registrar el servicio RPC por autenticación,
+	ejecutarlo como superusuario (sudo ./reserva_bol ...)

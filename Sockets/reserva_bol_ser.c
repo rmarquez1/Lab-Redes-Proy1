@@ -25,40 +25,40 @@ int main(int argc, char *argv[])
 	unsigned int clntLen;
 	pthread_t clientThread;
 
- 	if (argc<7 || argc>7){
- 		perror("Error: Numero de argumentos invalidos.\n"
- 			"	Introduzca: reserva_bol_ser -f <filas> -c <col> [-p puerto]");
- 		exit(1);
- 	}
- 	/* Verificamos los argumentos */
- 	int i;
+ 	if (argc < 5)
+ 	 	DieWithError("Error: Numero de argumentos invalidos.\n"
+ 		"	Introduzca: reserva_bol_ser -f <filas> -c <col> [-p puerto]");
+ 	
+ 	 	/* Verificamos los argumentos */
 
- 	for (i=1; i<argc;i++){
- 		if (strcmp("-f",argv[i])==0){
- 			i++;
- 			/* Verificamos que sea un numero entero */
- 			if (!(atoi(argv[i]))){
- 				DieWithError("ERROR: EL VALOR SEGUIDO DE [-f] DEBE SER UN NUMERO ENTERO");
- 			}
- 		}else if(strcmp("-c",argv[i])==0){
- 			i++;
- 			/* Verificamos que sea un numero entero */
- 			if (!(atoi(argv[i]))){
- 				DieWithError("ERROR: EL VALOR SEGUIDO DE [-c] DEBE SER UN NUMERO ENTERO");
- 			}
- 		}else if(strcmp("-p",argv[i])==0){
- 			i++;
- 			/* Verificamos que sea un numero entero */
- 			if (!(atoi(argv[i]))){
- 				DieWithError("ERROR: EL VALOR SEGUIDO DE [-p] DEBE SER UN NUMERO DE PUERTO");
- 			}
- 		}else{
- 			DieWithError("Error: Argumentos invalidos.\n"
- 					"	Introduzca: reserva_bol_ser -f <filas> -c <col> [-p puerto]");
- 		}
- 	}
+	if (strcmp("-f",argv[1])==0)
+	{
+		/* Verificamos que sea un numero entero */
+		if (!(atoi(argv[2])))
+			DieWithError("ERROR: EL VALOR SEGUIDO DE [-f] DEBE SER UN NUMERO ENTERO");
+	} else 
+		DieWithError("Error: Argumentos invalidos.\n"
+		"	Introduzca: reserva_bol_ser -f <filas> -c <col> [-p puerto]");
+	
+	if(strcmp("-c",argv[3])==0) {
+		/* Verificamos que sea un numero entero */
+		if (!(atoi(argv[4])))
+			DieWithError("ERROR: EL VALOR SEGUIDO DE [-c] DEBE SER UN NUMERO ENTERO");
+	} else 
+		DieWithError("Error: Argumentos invalidos.\n"
+		"	Introduzca: reserva_bol_ser -f <filas> -c <col> [-p puerto]");
+	
+	if (argc == 7) {
+		if(strcmp("-p",argv[5])==0) {
+			/* Verificamos que sea un numero entero */
+			if (!(echoServPort = atoi(argv[6])))
+				DieWithError("ERROR: EL VALOR SEGUIDO DE [-p] DEBE SER UN NUMERO DE PUERTO");
+		} else
+			DieWithError("Error: Argumentos invalidos.\n"
+			"	Introduzca: reserva_bol_ser -f <filas> -c <col> [-p puerto]");
+	} else
+ 		echoServPort = 5555;
 
-	echoServPort = atoi(argv[6]);
 
 	if ((servSock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
 		DieWithError( "La funcion socket en el archivo reserva_bol_ser.c fallo") ;
@@ -79,9 +79,11 @@ int main(int argc, char *argv[])
 	for(;;)
 	{
 		clntLen = sizeof(echoClntAddr);
-
+		
 		if ((clntSock = accept(servSock, (struct sockaddr *) &echoClntAddr, &clntLen)) < 0)
 			DieWithError("La funcion accept en el archivo reserva_bol_ser.c fallo");
+		
+		writeFromClientLog(echoClntAddr, clntSock);
 
    		if((pthread_create(&clientThread,NULL,HandleTCPClient,(void*)&clntSock)) != 0)
         	DieWithError("fallo la creacion del hilo en el archivo reserva_bol_ser"); 
